@@ -21,24 +21,33 @@ int getch(void);
 
 int getche(void);
 
+bool carregarDicionario(char *p_nomeArquivo);
+
 bool usuarioApertouEnter(char p_caracter);
 
 bool usuarioApertouBackspace(char p_caracter);
 
 bool numeroLetrasIncorreto(int p_numeroLetras, int p_numeroPermitido);
 
-int main()
+int main(int p_argc,char **p_argv)
 {
+    if(p_argc < 3)
+    {
+        printf("O comando não executado corretamente. \nFavor informar o nome do arquivo de Dicionário e número de letras para indexação");
+        return EXIT_FAILURE;
+    }
     printf("==============================\n");
     printf("\tAutocomplete\n");
     printf("==============================\n");
+
+    carregarDicionario(p_argv[1]);
 
     int v_numeroMaximoIndexacao = TAMANHO_TABELA_HASH - 1;
     int v_numeroLetras = 0;
     bool v_usuarioNaoApertouEnter = true;
     char v_char;
-    char v_palavra[v_numeroMaximoIndexacao];
-    v_palavra[v_numeroMaximoIndexacao] = '\0'; // Removendo caracter que identificar uma string ('@')
+    char v_busca[v_numeroMaximoIndexacao];
+    v_busca[v_numeroMaximoIndexacao] = '\0'; // Removendo caracter que identificar uma string ('@')
 
     //Crinado tabela Hash
     Palavra *tabelaHash = malloc(sizeof(Palavra) * TAMANHO_TABELA_HASH);
@@ -67,17 +76,17 @@ int main()
                 {
                     if(v_numeroLetras > 0)
                     {
-                        v_palavra[v_numeroLetras - 1] = '\0';
+                        v_busca[v_numeroLetras - 1] = '\0';
                         v_numeroLetras--;
                     }
                 }
                 else
                 {
-                    v_palavra[v_numeroLetras] = v_char;
+                    v_busca[v_numeroLetras] = v_char;
                     v_numeroLetras++;
                 }
             }
-            printf("%s\n\n", v_palavra);
+            printf("%s\n\n", v_busca);
         }
     }
     
@@ -148,4 +157,28 @@ bool numeroLetrasIncorreto(int p_numeroLetras, int p_numeroPermitido)
         return true;
     }
     return false;
+}
+
+bool carregarDicionario(char *p_nomeArquivo)
+{
+    printf("\n[Início] Carregando dicionário...\n");
+    
+    FILE *v_dicionario = fopen(p_nomeArquivo, "r");
+    char v_palavra [100];
+    if(v_dicionario == NULL)
+    {
+        printf("Erro ao encontrar dicionário de palavras.");
+        return EXIT_FAILURE;
+    }
+
+    printf("\n\nPalavras: \n");
+    printf("========");
+    while(fscanf(v_dicionario, "%s", v_palavra) != EOF)
+    {
+        printf("\n%s", v_palavra);
+    }
+    printf("\n\n");
+    fclose(v_dicionario);
+
+    printf("\n[Fim] Carregando dicionário...\n");
 }
