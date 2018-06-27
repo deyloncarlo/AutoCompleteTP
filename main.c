@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <string.h>
 
-#define TAMANHO_TABELA_HASH 10124
+#define TAMANHO_TABELA_HASH 3000
 
 struct palavra
 {
@@ -46,20 +46,16 @@ int main(int p_argc,char **p_argv)
     printf("Tamanho prefixo para indexar: %d\n", v_tamanhoPrefixo);
 
     //Crinado tabela Hash
-    Palavra *tabelaHash = malloc(sizeof(Palavra) * TAMANHO_TABELA_HASH);
-    Palavra v_ola;
-    v_ola.chave = "Ola";
-    tabelaHash[0] = v_ola;
-    carregarDicionario(p_argv[1], tabelaHash, v_tamanhoPrefixo);
+    Palavra *v_tabelaHash = malloc(sizeof(Palavra) * TAMANHO_TABELA_HASH);
+    carregarDicionario(p_argv[1], v_tabelaHash, v_tamanhoPrefixo);
 
 
-    int v_numeroMaximoIndexacao = TAMANHO_TABELA_HASH - 1;
+    int v_numeroMaximoIndexacao = v_tamanhoPrefixo - 1;
     int v_numeroLetras = 0;
     bool v_usuarioNaoApertouEnter = true;
     char v_char;
     char v_busca[v_numeroMaximoIndexacao];
-    v_busca[v_numeroMaximoIndexacao] = '\0'; // Removendo caracter que identificar uma string ('@')
-
+    v_busca[v_tamanhoPrefixo] = '\0'; // Removendo caracter que identificar uma string ('@')
     while(v_usuarioNaoApertouEnter)
     {
         v_char = getch();
@@ -86,7 +82,17 @@ int main(int p_argc,char **p_argv)
                 }
                 else
                 {
+                    printf("\nChar digitado: %c; Char na posicao: %c\n", v_char, v_busca[v_numeroLetras]);
                     v_busca[v_numeroLetras] = v_char;
+                    char v_aux[strlen(v_busca)];
+                    v_aux[strlen(v_busca)] = '\0';
+                    memcpy(v_aux, v_busca, strlen(v_busca));
+                    printf("Aux: %s\n", v_aux);
+                    Palavra v_palavra = v_tabelaHash[funcaoHash(v_aux, strlen(v_aux))];
+                    if(v_palavra.chave != NULL)
+                    {
+                        printf("\nPalavra encontrada: %s\n", v_palavra.chave);
+                    }
                     v_numeroLetras++;
                 }
             }
@@ -169,7 +175,6 @@ bool numeroLetrasIncorreto(int p_numeroLetras, int p_numeroPermitido)
  */
 bool carregarDicionario(char *p_nomeArquivo, Palavra *p_tabelaHash, int p_tamanhoPrefixo)
 {
-    printf("%s", p_tabelaHash[0].chave);
     printf("\n[Início] Carregando dicionário...\n");
     
     FILE *v_dicionario = fopen(p_nomeArquivo, "r");
@@ -183,32 +188,41 @@ bool carregarDicionario(char *p_nomeArquivo, Palavra *p_tabelaHash, int p_tamanh
 //subbuff[4] = '\0';
     printf("\n\nPalavras: \n");
     printf("========");
-    
+    int v_indiceTabelaHash;
     while(fscanf(v_dicionario, "%s", v_palavra) != EOF)
     {
+        Palavra v_novaPalavra;
         //printf("\n%s", v_palavra);
         if(p_tamanhoPrefixo >= strlen(v_palavra))
         {
             char v_aux[strlen(v_palavra)];
+            v_aux[strlen(v_palavra)] = '\0';
             memcpy(v_aux, v_palavra, strlen(v_palavra));
             printf("\nPrefixo encontrado: %s ", v_aux);
-            funcaoHash(v_aux, strlen(v_palavra));
+            v_indiceTabelaHash = funcaoHash(v_aux, strlen(v_palavra));
+            //strcat(v_novaPalavra.chave, v_aux);
+            v_novaPalavra.chave = v_aux;
+            p_tabelaHash[v_indiceTabelaHash] = v_novaPalavra;
+            printf("Indexouu: %s\n", p_tabelaHash[v_indiceTabelaHash].chave);
         }
         else 
         {
             char v_prefixo[p_tamanhoPrefixo];
+            v_prefixo[p_tamanhoPrefixo] = '\0';
             memcpy( v_prefixo, v_palavra, p_tamanhoPrefixo );
-            printf("\nIgual Prefixo encontrado: %s ", v_prefixo);
-            funcaoHash(v_prefixo,p_tamanhoPrefixo);
+            printf("\nPrefixo Igual encontrado: %s ", v_prefixo);
+            v_indiceTabelaHash = funcaoHash(v_prefixo,p_tamanhoPrefixo);
+            //strcat(v_novaPalavra.chave, v_prefixo);
+            v_novaPalavra.chave = v_prefixo;
+            p_tabelaHash[0] = v_novaPalavra;
+            printf("\nIndexouu: %s\n", p_tabelaHash[0].chave);
         }
-        //strncpy(v_prefixo,v_palavra , 4);
-        //strcpy(v_prefixo, v_palavra);
-        
-        
     }
+
     printf("\n\n");
     fclose(v_dicionario);
 
+    printf("Valor posicao: %s:\n", p_tabelaHash[0].chave);
     printf("\n[Fim] Carregando dicionário...\n");
 }
 
