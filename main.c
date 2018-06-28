@@ -10,6 +10,9 @@
 struct palavra
 {
     char *chave;
+    char **lista;
+    int tamanhoLista;
+
 };
 
 typedef struct palavra Palavra;
@@ -21,7 +24,7 @@ int getch(void);
 
 int getche(void);
 
-bool carregarDicionario(char *p_nomeArquivo, Palavra *p_tabelaHash, int p_tamanhoPrefixo);
+bool carregarDicionario(char *p_nomeArquivo, int p_tamanhoPrefixo);
 
 bool usuarioApertouEnter(char p_caracter);
 
@@ -30,6 +33,10 @@ bool usuarioApertouBackspace(char p_caracter);
 bool numeroLetrasIncorreto(int p_numeroLetras, int p_numeroPermitido);
 
 int funcaoHash(char *p_prefixo, int p_fator);
+
+void listarPalavras(int p_indice);
+
+static Palavra *v_tabelaHash;
 
 int main(int p_argc,char **p_argv)
 {
@@ -46,8 +53,8 @@ int main(int p_argc,char **p_argv)
     printf("Tamanho prefixo para indexar: %d\n", v_tamanhoPrefixo);
 
     //Crinado tabela Hash
-    Palavra *v_tabelaHash = malloc(sizeof(Palavra) * TAMANHO_TABELA_HASH);
-    carregarDicionario(p_argv[1], v_tabelaHash, v_tamanhoPrefixo);
+    v_tabelaHash = malloc(sizeof(Palavra) * TAMANHO_TABELA_HASH);
+    carregarDicionario(p_argv[1], v_tamanhoPrefixo);
 
 
     int v_numeroMaximoIndexacao = v_tamanhoPrefixo - 1;
@@ -82,17 +89,15 @@ int main(int p_argc,char **p_argv)
                 }
                 else
                 {
-                    printf("\nChar digitado: %c; Char na posicao: %c\n", v_char, v_busca[v_numeroLetras]);
+                    //printf("\nChar digitado: %c; Char na posicao: %c\n", v_char, v_busca[v_numeroLetras]);
                     v_busca[v_numeroLetras] = v_char;
                     char v_aux[strlen(v_busca)];
                     v_aux[strlen(v_busca)] = '\0';
                     memcpy(v_aux, v_busca, strlen(v_busca));
-                    printf("Aux: %s\n", v_aux);
-                    Palavra v_palavra = v_tabelaHash[funcaoHash(v_aux, strlen(v_aux))];
-                    if(v_palavra.chave != NULL)
-                    {
-                        printf("\nPalavra encontrada: %s\n", v_palavra.chave);
-                    }
+                    int v_indice = funcaoHash(v_aux, strlen(v_aux));
+                    //Palavra v_palavra = v_tabelaHash[v_indice];
+                    listarPalavras(v_indice);
+                    //printf("\nPalavra encontrada: %s\n", v_palavra.chave);
                     v_numeroLetras++;
                 }
             }
@@ -173,7 +178,7 @@ bool numeroLetrasIncorreto(int p_numeroLetras, int p_numeroPermitido)
 /**
  * Função que carrega o dicionário de palávras 
  */
-bool carregarDicionario(char *p_nomeArquivo, Palavra *p_tabelaHash, int p_tamanhoPrefixo)
+bool carregarDicionario(char *p_nomeArquivo, int p_tamanhoPrefixo)
 {
     printf("\n[Início] Carregando dicionário...\n");
     
@@ -185,60 +190,76 @@ bool carregarDicionario(char *p_nomeArquivo, Palavra *p_tabelaHash, int p_tamanh
         return EXIT_FAILURE;
     }
 
-//subbuff[4] = '\0';
+    //subbuff[4] = '\0';
     printf("\n\nPalavras: \n");
     printf("========");
     int v_indiceTabelaHash;
     while(fscanf(v_dicionario, "%s", v_palavra) != EOF)
     {
         Palavra v_novaPalavra;
-        //printf("\n%s", v_palavra);
+        v_novaPalavra.chave = (char *)malloc(p_tamanhoPrefixo);
+        v_novaPalavra.lista = malloc(100 * sizeof(char*));
         if(p_tamanhoPrefixo >= strlen(v_palavra))
         {
             char v_aux[strlen(v_palavra)];
             v_aux[strlen(v_palavra)] = '\0';
             memcpy(v_aux, v_palavra, strlen(v_palavra));
-            printf("\nPrefixo encontrado: %s ", v_aux);
             v_indiceTabelaHash = funcaoHash(v_aux, strlen(v_palavra));
-            //strcat(v_novaPalavra.chave, v_aux);
-            v_novaPalavra.chave = v_aux;
-            p_tabelaHash[v_indiceTabelaHash] = v_novaPalavra;
-            printf("Indexouu: %s\n", p_tabelaHash[v_indiceTabelaHash].chave);
+            strcpy(v_novaPalavra.chave,v_aux);
         }
         else 
         {
             char v_prefixo[p_tamanhoPrefixo];
             v_prefixo[p_tamanhoPrefixo] = '\0';
             memcpy( v_prefixo, v_palavra, p_tamanhoPrefixo );
-            printf("\nPrefixo Igual encontrado: %s ", v_prefixo);
             v_indiceTabelaHash = funcaoHash(v_prefixo,p_tamanhoPrefixo);
-            //strcat(v_novaPalavra.chave, v_prefixo);
-            v_novaPalavra.chave = v_prefixo;
-            p_tabelaHash[0] = v_novaPalavra;
-            printf("\nIndexouu: %s\n", p_tabelaHash[0].chave);
+            strcpy(v_novaPalavra.chave,v_prefixo);
         }
+        if(v_tabelaHash[v_indiceTabelaHash].chave != NULL)
+        {
+            int v_tamanhoLista = v_tabelaHash[v_indiceTabelaHash].tamanhoLista;
+            v_tabelaHash[v_indiceTabelaHash].lista[v_tamanhoLista] = malloc((100) * sizeof(char));
+            strcpy(v_tabelaHash[v_indiceTabelaHash].lista[v_tamanhoLista], v_palavra);
+            v_tabelaHash[v_indiceTabelaHash].tamanhoLista++;
+        }
+        else
+        {
+            v_novaPalavra.lista[0] = malloc((100) * sizeof(char));
+            strcpy(v_novaPalavra.lista[0], v_palavra);
+            v_novaPalavra.tamanhoLista = 1;
+            v_tabelaHash[v_indiceTabelaHash] = v_novaPalavra;
+        }
+
     }
 
     printf("\n\n");
     fclose(v_dicionario);
-
-    printf("Valor posicao: %s:\n", p_tabelaHash[0].chave);
     printf("\n[Fim] Carregando dicionário...\n");
 }
 
 int funcaoHash(char *p_prefixo, int p_fator)
 {
     int v_hash = 0;
-    //printf("\nCalculando Hash");
     int v_tamanho = strlen(p_prefixo);
     int v_indice;
     int v_decresce = p_fator;
     for(v_indice = 0; v_indice < v_tamanho; v_indice++)
     {
-        //printf("\nChar :  %c\n", p_prefixo[v_indice]);
         v_hash += (v_decresce*v_decresce*v_decresce)*( ((int)p_prefixo[v_indice]) / (p_fator) );
         v_decresce--;
     }
     printf(" Funcao Hash calculada: %d\n", v_hash);
     return v_hash;
+}
+
+void listarPalavras(int p_indice)
+{
+    if(v_tabelaHash[p_indice].chave != NULL)
+    {
+        int i;
+        for(i = 0; i < v_tabelaHash[p_indice].tamanhoLista; i++)
+        {
+            printf(" - %s \n", v_tabelaHash[p_indice].lista[i]);
+        }
+    }
 }
