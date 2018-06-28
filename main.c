@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <string.h>
 
-#define TAMANHO_TABELA_HASH 3000
+#define TAMANHO_TABELA_HASH 999999
 
 struct palavra
 {
@@ -34,7 +34,15 @@ bool numeroLetrasIncorreto(int p_numeroLetras, int p_numeroPermitido);
 
 int funcaoHash(char *p_prefixo, int p_fator);
 
-void listarPalavras(int p_indice);
+void listarPalavras(int p_indice, char *p_chave);
+
+void indexarPalavras(int p_lenth, int p_tamanhoPrefixo, char p_palavra[]);
+
+void limparArrayBusca(char *p_array, int p_tamanho);
+
+bool isChavesIguais(char *p_chave1, char *p_chave2);
+
+void ordernar(Palavra p_palavra);
 
 static Palavra *v_tabelaHash;
 
@@ -62,14 +70,15 @@ int main(int p_argc,char **p_argv)
     bool v_usuarioNaoApertouEnter = true;
     char v_char;
     char v_busca[v_numeroMaximoIndexacao];
-    v_busca[v_tamanhoPrefixo] = '\0'; // Removendo caracter que identificar uma string ('@')
+    limparArrayBusca(v_busca, v_tamanhoPrefixo);
+    //v_busca[v_tamanhoPrefixo] = '\0'; // Removendo caracter que identificar uma string ('@')
     while(v_usuarioNaoApertouEnter)
     {
         v_char = getch();
         if(usuarioApertouEnter(v_char))
         {
             v_usuarioNaoApertouEnter = false;
-            printf("\n\nFim\n");
+            printf("\n\nPrograma Finalizado!!\n");
         }
         else
         {
@@ -86,26 +95,39 @@ int main(int p_argc,char **p_argv)
                         v_busca[v_numeroLetras - 1] = '\0';
                         v_numeroLetras--;
                     }
+                    char v_aux[strlen(v_busca)];
+                    v_aux[strlen(v_busca)] = '\0';
+                    memcpy(v_aux, v_busca, strlen(v_busca));
+                    printf("\nBusca: %s\n", v_busca);
+                    int v_indice = funcaoHash(v_aux, strlen(v_aux));
+                    listarPalavras(v_indice, v_aux);
                 }
                 else
                 {
-                    //printf("\nChar digitado: %c; Char na posicao: %c\n", v_char, v_busca[v_numeroLetras]);
                     v_busca[v_numeroLetras] = v_char;
                     char v_aux[strlen(v_busca)];
                     v_aux[strlen(v_busca)] = '\0';
                     memcpy(v_aux, v_busca, strlen(v_busca));
+                    printf("\nBusca: %s\n", v_busca);
                     int v_indice = funcaoHash(v_aux, strlen(v_aux));
-                    //Palavra v_palavra = v_tabelaHash[v_indice];
-                    listarPalavras(v_indice);
-                    //printf("\nPalavra encontrada: %s\n", v_palavra.chave);
+                    listarPalavras(v_indice, v_aux);
                     v_numeroLetras++;
+
                 }
             }
-            printf("%s\n\n", v_busca);
-        }
+        }   
     }
     
     return 0;
+}
+
+void limparArrayBusca(char *p_array, int p_tamanho)
+{
+    int v_indice;
+    for(v_indice = 0; v_indice <= p_tamanho; v_indice++)
+    {
+        p_array[v_indice] = '\0';
+    }
 }
 
 /**
@@ -190,44 +212,19 @@ bool carregarDicionario(char *p_nomeArquivo, int p_tamanhoPrefixo)
         return EXIT_FAILURE;
     }
 
-    //subbuff[4] = '\0';
-    printf("\n\nPalavras: \n");
-    printf("========");
+    //printf("\n\nPalavras: \n");
+    //printf("========");
     int v_indiceTabelaHash;
     while(fscanf(v_dicionario, "%s", v_palavra) != EOF)
     {
-        Palavra v_novaPalavra;
-        v_novaPalavra.chave = (char *)malloc(p_tamanhoPrefixo);
-        v_novaPalavra.lista = malloc(100 * sizeof(char*));
         if(p_tamanhoPrefixo >= strlen(v_palavra))
         {
-            char v_aux[strlen(v_palavra)];
-            v_aux[strlen(v_palavra)] = '\0';
-            memcpy(v_aux, v_palavra, strlen(v_palavra));
-            v_indiceTabelaHash = funcaoHash(v_aux, strlen(v_palavra));
-            strcpy(v_novaPalavra.chave,v_aux);
+            int v_lenth = strlen(v_palavra);
+            indexarPalavras(v_lenth, p_tamanhoPrefixo, v_palavra);
         }
         else 
         {
-            char v_prefixo[p_tamanhoPrefixo];
-            v_prefixo[p_tamanhoPrefixo] = '\0';
-            memcpy( v_prefixo, v_palavra, p_tamanhoPrefixo );
-            v_indiceTabelaHash = funcaoHash(v_prefixo,p_tamanhoPrefixo);
-            strcpy(v_novaPalavra.chave,v_prefixo);
-        }
-        if(v_tabelaHash[v_indiceTabelaHash].chave != NULL)
-        {
-            int v_tamanhoLista = v_tabelaHash[v_indiceTabelaHash].tamanhoLista;
-            v_tabelaHash[v_indiceTabelaHash].lista[v_tamanhoLista] = malloc((100) * sizeof(char));
-            strcpy(v_tabelaHash[v_indiceTabelaHash].lista[v_tamanhoLista], v_palavra);
-            v_tabelaHash[v_indiceTabelaHash].tamanhoLista++;
-        }
-        else
-        {
-            v_novaPalavra.lista[0] = malloc((100) * sizeof(char));
-            strcpy(v_novaPalavra.lista[0], v_palavra);
-            v_novaPalavra.tamanhoLista = 1;
-            v_tabelaHash[v_indiceTabelaHash] = v_novaPalavra;
+            indexarPalavras(p_tamanhoPrefixo, p_tamanhoPrefixo, v_palavra);
         }
 
     }
@@ -235,6 +232,69 @@ bool carregarDicionario(char *p_nomeArquivo, int p_tamanhoPrefixo)
     printf("\n\n");
     fclose(v_dicionario);
     printf("\n[Fim] Carregando dicionário...\n");
+}
+
+void indexarPalavras(int p_lenth, int p_tamanhoPrefixo, char p_palavra[])
+{
+    int v_indiceTabelaHash;
+    int v_lenthLimit = 1;
+    while (v_lenthLimit <= p_lenth)
+    {
+        Palavra v_novaPalavra;
+        v_novaPalavra.chave = (char *)malloc(p_tamanhoPrefixo);
+        v_novaPalavra.lista = malloc(100 * sizeof(char*));
+        char v_aux[v_lenthLimit];
+        v_aux[v_lenthLimit] = '\0';
+        memcpy(v_aux, p_palavra, v_lenthLimit);
+        v_indiceTabelaHash = funcaoHash(v_aux, v_lenthLimit);
+        strcpy(v_novaPalavra.chave,v_aux);
+        v_lenthLimit++;
+        
+        if(v_tabelaHash[v_indiceTabelaHash].chave != NULL)
+        {
+            if(isChavesIguais(v_tabelaHash[v_indiceTabelaHash].chave, v_aux))
+            {
+                int v_tamanhoLista = v_tabelaHash[v_indiceTabelaHash].tamanhoLista;
+                v_tabelaHash[v_indiceTabelaHash].lista[v_tamanhoLista] = malloc((100) * sizeof(char));
+                strcpy(v_tabelaHash[v_indiceTabelaHash].lista[v_tamanhoLista], p_palavra);
+                v_tabelaHash[v_indiceTabelaHash].tamanhoLista++;
+            }
+            else
+            {
+                int v_proximoIndiceNull = v_indiceTabelaHash;
+                bool v_continua = true;
+                while(v_continua)
+                {
+                    if(v_tabelaHash[v_proximoIndiceNull].chave == NULL)
+                    {
+                        //printf("\nComflito corrigido!!!\n");
+                        v_novaPalavra.lista[0] = malloc((100) * sizeof(char));
+                        strcpy(v_novaPalavra.lista[0], p_palavra);
+                        v_novaPalavra.tamanhoLista = 1;
+                        v_tabelaHash[v_proximoIndiceNull] = v_novaPalavra;
+                        v_continua = false;
+                    }
+                    else if(isChavesIguais(v_tabelaHash[v_proximoIndiceNull].chave, v_aux))
+                    {
+                        int v_tamanhoLista = v_tabelaHash[v_proximoIndiceNull].tamanhoLista;
+                        v_tabelaHash[v_proximoIndiceNull].lista[v_tamanhoLista] = malloc((100) * sizeof(char));
+                        strcpy(v_tabelaHash[v_proximoIndiceNull].lista[v_tamanhoLista], p_palavra);
+                        v_tabelaHash[v_proximoIndiceNull].tamanhoLista++;
+                        v_continua = false;
+                    }
+                    v_proximoIndiceNull++;
+                }
+            }
+        }
+        else
+        {
+            v_novaPalavra.lista[0] = malloc((100) * sizeof(char));
+            strcpy(v_novaPalavra.lista[0], p_palavra);
+            v_novaPalavra.tamanhoLista = 1;
+            v_tabelaHash[v_indiceTabelaHash] = v_novaPalavra;
+        }
+    }
+
 }
 
 int funcaoHash(char *p_prefixo, int p_fator)
@@ -245,21 +305,90 @@ int funcaoHash(char *p_prefixo, int p_fator)
     int v_decresce = p_fator;
     for(v_indice = 0; v_indice < v_tamanho; v_indice++)
     {
-        v_hash += (v_decresce*v_decresce*v_decresce)*( ((int)p_prefixo[v_indice]) / (p_fator) );
+        v_hash += (v_decresce*v_decresce)*( ((int)p_prefixo[v_indice]) / (p_fator) );
         v_decresce--;
     }
     printf(" Funcao Hash calculada: %d\n", v_hash);
     return v_hash;
 }
 
-void listarPalavras(int p_indice)
+void listarPalavras(int p_indice, char *p_chave)
 {
+    //printf("\nOriginal: %s, Busca: %s\n", v_tabelaHash[p_indice].chave, p_chave);
     if(v_tabelaHash[p_indice].chave != NULL)
     {
-        int i;
-        for(i = 0; i < v_tabelaHash[p_indice].tamanhoLista; i++)
+        if(!isChavesIguais(v_tabelaHash[p_indice].chave, p_chave))
         {
-            printf(" - %s \n", v_tabelaHash[p_indice].lista[i]);
+                int v_proximoIndiceNull = p_indice;
+                bool v_continua = true;
+                while(v_continua)
+                {
+                    if(v_tabelaHash[v_proximoIndiceNull].chave == NULL)
+                    {
+                        v_continua = false;
+                    }
+                    else if(isChavesIguais(v_tabelaHash[v_proximoIndiceNull].chave, p_chave))
+                    {
+                        //printf("\nAchou o perdido!!!\n");
+                        int i;
+                        ordernar(v_tabelaHash[v_proximoIndiceNull]);
+                        printf("Sugestões: ");
+                        for(i = 0; i < v_tabelaHash[v_proximoIndiceNull].tamanhoLista; i++)
+                        {
+                            printf("%s, ", v_tabelaHash[v_proximoIndiceNull].lista[i]);
+                        }
+                        printf("\n\n\n");
+                        v_continua = false;
+                    }
+                    v_proximoIndiceNull++;
+                }
+        }
+        else
+        {
+            int i;
+            ordernar(v_tabelaHash[p_indice]);
+            printf("Sugestões: ");
+            for(i = 0; i < v_tabelaHash[p_indice].tamanhoLista; i++)
+            {
+                printf("%s, ", v_tabelaHash[p_indice].lista[i]);
+            }
+            printf("\n\n\n");
+        }
+                
+    }
+}
+
+bool isChavesIguais(char *p_chave1, char *p_chave2)
+{
+    int v_indice;
+    if(strlen(p_chave1) == strlen(p_chave2))
+    {
+        for(v_indice = 0; v_indice < strlen(p_chave1); v_indice++)
+        {
+            if(p_chave1[v_indice] != p_chave2[v_indice])
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+void ordernar(Palavra p_palavra)
+{
+    int i, j;
+    char temp[100];
+    for( i =0; i < p_palavra.tamanhoLista; i++)
+    {
+        for(j = i + 1; j< p_palavra.tamanhoLista; j++)
+        {
+            if(strcmp(p_palavra.lista[i],p_palavra.lista[j])>0)
+            {
+                strcpy(temp,p_palavra.lista[i]);
+                strcpy(p_palavra.lista[i],p_palavra.lista[j]);
+                strcpy(p_palavra.lista[j],temp);
+            }
         }
     }
 }
